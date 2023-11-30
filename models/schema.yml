@@ -1,0 +1,94 @@
+version: 2
+models:
+  - name: dim_listings_cleansed
+    description: Cleansed table which contains Airbnb listings.
+    columns:
+      - name: listing_id
+        description: Primary key for the listing.
+        tests:
+          - unique
+          - not_null
+      - name: host_id
+        description: the host's id. References the hosts table.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_hosts_cleansed')
+              field: host_id
+      - name: room_type
+        description: Type of the apartment/room.
+        tests:
+          - accepted_values:
+              values:
+                - Entire home/apt
+                - Private room
+                - Shared room
+                - Hotel room
+      - name: minimum_nights
+        description: '{{doc("dim_listing_cleansed__minimum_nights")}}'
+        tests:
+          - positive_value
+  - name: dim_hosts_cleansed
+    description: Cleansed table for the Airbnb hosts
+    columns:
+      - name: host_id
+        description: The id of the host. This is the primary key.
+      - name: host_name
+        description: The name of the host.
+      - name: is_superhost
+        description: Defines whether the hosts is a superhost.
+      - name: created_at
+        description: when the record was created.
+      - name: updated_at
+        description: when the record was last update.
+  - name: dim_listings_w_hosts
+    tests:
+      - dbt_expectations.expect_table_row_count_to_equal_other_table:
+          compare_model: source('airbnb', 'listings')
+    columns:
+      - name: price
+        tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: number
+          - dbt_expectations.expect_column_quantile_values_to_be_between:
+              quantile: 0.99
+              min_value: 50
+              max_value: 500
+          - dbt_expectations.expect_column_max_to_be_between:
+              max_value: 5000
+              config:
+                severity: warn
+  - name: mart_fullmoon_reviews
+    description: "The 'mart_fullmoon_reviews' model is used to create a denormalized
+      table that combines the 'fct_reviews' table with the 'full_moon_dates'
+      table. It adds a new column 'is_full_moon' to the 'fct_reviews' table,
+      indicating whether the review date corresponds to a full moon date or not.
+      This model is helpful for analyzing the impact of full moon on the reviews
+      received. The 'is_full_moon' column has two possible values: 'full moon'
+      if the review date is a full moon date, and 'not full moon' if it is not.
+      This denormalized table can be used for further analysis and reporting
+      purposes."
+    columns:
+      - name: REVIEW_ID
+        description: ""
+      - name: LISTING_ID
+        description: ""
+      - name: REVIEW_DATE
+        description: ""
+      - name: REVIEWER_NAME
+        description: ""
+      - name: REVIEW_TEXT
+        description: ""
+      - name: REVIEW_SENTIMENT
+        description: The REVIEW_SENTIMENT column represents the sentiment of a review
+          left by a guest. It is a categorical variable that indicates whether
+          the sentiment of the review is positive, negative, or neutral. This
+          column can be used to analyze the overall sentiment of guests towards
+          their experiences, allowing data analysts to identify trends and
+          patterns in guest satisfaction. It can be used to calculate sentiment
+          scores, sentiment distributions, and sentiment trends over time. By
+          analyzing the sentiment of reviews, analysts can gain insights into
+          the strengths and weaknesses of the Airbnb listings and make
+          data-driven decisions to improve guest experiences.
+      - name: IS_FULL_MOON
+        description: ""
