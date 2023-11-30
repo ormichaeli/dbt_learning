@@ -7,6 +7,7 @@
 
 with src_hosts as (
     SELECT * FROM {{ref("src_hosts")}}
+    
 )
 select 
     host_id,
